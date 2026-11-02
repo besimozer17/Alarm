@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Alarm">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Alarm</title>
+<style>
+  :root {
+    --bg: #000;
+    --fg: #f2f2f2;
+    --muted: #8a8a8a;
+    --card: #141414;
+    --line: #262626;
+    --accent: #ff8c28;
+    --danger: #ff453a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+  body { padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom); }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  .hidden { display: none !important; }
+
+  /* ---------- Ayar ekranı ---------- */
+  #setup { max-width: 520px; margin: 0 auto; padding: 20px 0 120px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  h1 { font-size: 34px; margin: 0; }
+  .icon-btn { width: 44px; height: 44px; border-radius: 22px; background: var(--card);
+    font-size: 28px; line-height: 44px; color: var(--accent); }
+  .hint { background: #2a1a08; border: 1px solid #5a3510; color: #ffcf9e; border-radius: 12px;
+    padding: 12px 14px; font-size: 14px; line-height: 1.45; margin: 10px 0; }
+  .alarm { display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line); padding: 14px 0; }
+  .alarm .t { font-size: 52px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1; }
+  .alarm .d { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .alarm.off .t, .alarm.off .d { opacity: .4; }
+  .alarm .info { flex: 1; text-align: left; padding: 0; }
+  .switch { position: relative; width: 52px; height: 32px; border-radius: 16px; background: #39393d; flex: none; transition: background .2s; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 28px; height: 28px;
+    border-radius: 50%; background: #fff; transition: transform .2s; }
+  .switch.on { background: #30d158; }
+  .switch.on::after { transform: translateX(20px); }
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+  .settings { margin-top: 28px; background: var(--card); border-radius: 12px; padding: 4px 14px; }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; gap: 12px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row select, .row input[type=range] { accent-color: var(--accent); }
+  select { background: #222; color: var(--fg); border: 0; border-radius: 8px; padding: 6px 8px; font: inherit; }
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, #000 30%); }
+  .big { display: block; width: 100%; max-width: 520px; margin: 0 auto; padding: 18px; border-radius: 14px;
+    background: var(--accent); color: #000; font-size: 19px; font-weight: 600; }
+  .ghost { background: var(--card); color: var(--fg); font-weight: 500; margin-top: 8px; font-size: 16px; padding: 14px; }
+
+  /* ---------- Düzenleme penceresi ---------- */
+  #editor { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: flex-end; z-index: 10; }
+  #editor .sheet { width: 100%; max-width: 520px; margin: 0 auto; background: #1c1c1e; border-radius: 16px 16px 0 0;
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); }
+  .sheet-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .sheet-top button { color: var(--accent); font-size: 17px; padding: 6px; }
+  .sheet-top b { font-size: 17px; }
+  #e-time { display: block; width: 100%; font-size: 54px; text-align: center; background: #000; color: var(--fg);
+    border: 0; border-radius: 12px; padding: 10px; font-variant-numeric: tabular-nums; -webkit-appearance: none; appearance: none; min-height: 90px; }
+  .days { display: flex; justify-content: space-between; margin: 18px 0 8px; gap: 6px; }
+  .days button { flex: 1; height: 42px; border-radius: 21px; background: #2c2c2e; font-size: 14px; }
+  .days button.sel { background: var(--accent); color: #000; font-weight: 600; }
+  .quick { display: flex; gap: 8px; margin-bottom: 14px; }
+  .quick button { flex: 1; padding: 8px; border-radius: 8px; background: #2c2c2e; font-size: 13px; color: var(--muted); }
+  #e-del { color: var(--danger); width: 100%; padding: 14px; background: #2c2c2e; border-radius: 12px; margin-top: 8px; }
+
+  /* ---------- Gece ekranı ---------- */
+  #night { position: fixed; inset: 0; background: #000; z-index: 20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; }
+  #clock-wrap { position: absolute; text-align: center; transition: top 2s, left 2s; transform: translate(-50%, -50%); top: 50%; left: 50%; }
+  #n-clock { font-size: min(30vw, 40vh); font-weight: 200; font-variant-numeric: tabular-nums; color: var(--accent);
+    line-height: 1; letter-spacing: -2px; }
+  #n-next { font-size: 16px; color: var(--accent); margin-top: 10px; }
+  #n-bar { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom)); left: 16px; right: 16px; display: flex;
+    flex-direction: column; gap: 10px; align-items: center; transition: opacity .4s; }
+  #n-bar.faded { opacity: 0; pointer-events: none; }
+  #n-bar .rowbtn { display: flex; gap: 10px; width: 100%; max-width: 520px; }
+  #n-bar button { flex: 1; padding: 14px; border-radius: 12px; background: #1c1c1e; color: #aaa; font-size: 15px; }
+  #n-bar input { width: 100%; max-width: 520px; accent-color: var(--accent); }
+  #n-warn { position: absolute; top: calc(16px + env(safe-area-inset-top)); left: 16px; right: 16px; text-align: center;
+    font-size: 13px; color: #a05a20; }
+
+  /* ---------- Çalma ekranı ---------- */
+  #ring { position: fixed; inset: 0; z-index: 30; background: #000; display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between; padding: calc(60px + env(safe-area-inset-top)) 20px calc(30px + env(safe-area-inset-bottom));
+    animation: flash 1.6s ease-in-out infinite; }
+  @keyframes flash { 0%,100% { background: #000; } 50% { background: #5a2a00; } }
+  #r-clock { font-size: 26vw; font-weight: 200; font-variant-numeric: tabular-nums; line-height: 1; color: #fff; }
+  #r-label { font-size: 22px; color: #ffd0a0; margin-top: 10px; text-align: center; }
+  #ring .btns { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 14px; }
+  #r-snooze { padding: 28px; border-radius: 18px; background: var(--accent); color: #000; font-size: 24px; font-weight: 700; }
+  #r-stop { padding: 22px; border-radius: 18px; background: #2c2c2e; color: #fff; font-size: 20px; }
+
+  @media (min-aspect-ratio: 4/3) { #n-clock { font-size: 40vh; } #r-clock { font-size: 22vh; } }
+</style>
+</head>
+<body>
+
+<!-- Ayar ekranı -->
+<main id="setup">
+  <header>
+    <h1>Alarmlar</h1>
+    <button class="icon-btn" id="add" aria-label="Alarm ekle">+</button>
+  </header>
+  <div id="install-hint" class="hint hidden">
+    Ana ekrana eklemek için: Safari'de alttaki <b>Paylaş</b> düğmesine ve ardından <b>Ana Ekrana Ekle</b>'ye dokun.
+  </div>
+  <div id="list"></div>
+
+  <div class="settings">
+    <div class="row">
+      <span>Erteleme süresi</span>
+      <select id="s-snooze">
+        <option value="3">3 dk</option><option value="5">5 dk</option><option value="9">9 dk</option>
+        <option value="10">10 dk</option><option value="15">15 dk</option>
+      </select>
+    </div>
+    <div class="row">
+      <span>Ses yavaşça yükselsin</span>
+      <button class="switch" id="s-ramp" aria-label="Ses yavaşça yükselsin"></button>
+    </div>
+    <div class="row">
+      <span>Sesi dene</span>
+      <button id="test" style="color:var(--accent)">▶︎ Çal</button>
+    </div>
+  </div>
+  <div class="hint" style="margin-top:20px">
+    Alarmın çalması için gece <b>Gece Modu</b> açık kalmalı. Telefonun <b>şarjda</b> olsun, uygulamadan çıkma.
+    Ekranın kendiliğinden kilitlenmemesi için: <b>Ayarlar → Ekran ve Parlaklık → Otomatik Kilit → Hiçbir Zaman</b>.
+    Sessiz (zil) düğmesi açıkken de çalar, ama ses düzeyini yukarıda tut.
+  </div>
+</main>
+
+<div class="bottom" id="bottom">
+  <button class="big" id="start">🌙 Gece Modunu Başlat</button>
+</div>
+
+<!-- Düzenleme -->
+<div id="editor" class="hidden">
+  <div class="sheet">
+    <div class="sheet-top">
+      <button id="e-cancel">Vazgeç</button>
+      <b id="e-title">Alarm</b>
+      <button id="e-save"><b>Kaydet</b></button>
+    </div>
+    <input type="time" id="e-time" value="07:00">
+    <div class="days" id="e-days"></div>
+    <div class="quick">
+      <button data-q="none">Bir kez</button>
+      <button data-q="week">Hafta içi</button>
+      <button data-q="all">Her gün</button>
+    </div>
+    <button id="e-del">Alarmı Sil</button>
+  </div>
+</div>
+
+<!-- Gece ekranı -->
+<div id="night" class="hidden">
+  <div id="n-warn"></div>
+  <div id="clock-wrap">
+    <div id="n-clock">--:--</div>
+    <div id="n-next"></div>
+  </div>
+  <div id="n-bar" class="faded">
+    <input type="range" id="n-dim" min="0.04" max="1" step="0.01" aria-label="Parlaklık">
+    <div class="rowbtn">
+      <button id="n-exit">Gece Modundan Çık</button>
+    </div>
+  </div>
+</div>
+
+<!-- Çalma ekranı -->
+<div id="ring" class="hidden">
+  <div>
+    <div id="r-clock">--:--</div>
+    <div id="r-label">Alarm</div>
+  </div>
+  <div class="btns">
+    <button id="r-snooze">Ertele</button>
+    <button id="r-stop">Kapat</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
